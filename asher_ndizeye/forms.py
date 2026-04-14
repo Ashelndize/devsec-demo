@@ -4,6 +4,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, Pass
 from .models import Profile
 
 
+
 class RegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     first_name = forms.CharField(max_length=50, required=True)
@@ -11,7 +12,9 @@ class RegistrationForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2']
+        # REMOVED password1 and password2 from here. 
+        # UserCreationForm handles those automatically.
+        fields = ['username', 'first_name', 'last_name', 'email']
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -61,3 +64,4 @@ class ProfileForm(forms.ModelForm):
         if commit:
             profile.save()
         return profile
+        

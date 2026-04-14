@@ -3,13 +3,14 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
+from django.utils.http import url_has_allowed_host_and_scheme
 from .forms import RegistrationForm, LoginForm, ProfileForm
 from .models import Profile
-
 
 def register(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
+    
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
@@ -17,43 +18,60 @@ def register(request):
             Profile.objects.create(user=user)
             messages.success(request, "Account created! Please log in.")
             return redirect('login')
+        # If form is NOT valid, it skips the IF and goes to the bottom render
     else:
         form = RegistrationForm()
+    
+    # CRITICAL: This must be outside the 'if request.method == 'POST'' block
     return render(request, 'asher_ndizeye/register.html', {'form': form})
-
 
 def user_login(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
 
+    # Capture the 'next' parameter from the URL (GET) or the form (POST)
+    next_url = request.POST.get('next') or request.GET.get('next')
+
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
 
         if form.is_valid():
-            print("✅ LOGIN SUCCESS")
             login(request, form.get_user())
+            
+            # --- SECURITY FIX: Validate the redirect target ---
+            if next_url and url_has_allowed_host_and_scheme(
+                url=next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                return redirect(next_url)
+            
             return redirect('dashboard')
         else:
-            print("❌ LOGIN FAILED")
-            print(form.errors)
-
+            messages.error(request, "Invalid username or password.")
     else:
         form = LoginForm()
 
-    return render(request, 'asher_ndizeye/login.html', {'form': form})
-
+    return render(request, 'asher_ndizeye/login.html', {'form': form, 'next': next_url})
 
 @login_required
 def user_logout(request):
+    next_url = request.GET.get('next')
     logout(request)
     messages.info(request, "You have been logged out.")
+    
+    if next_url and url_has_allowed_host_and_scheme(
+        url=next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+        
     return redirect('login')
-
 
 @login_required
 def dashboard(request):
     return render(request, 'asher_ndizeye/dashboard.html')
-
 
 @login_required
 def profile(request):
@@ -67,7 +85,6 @@ def profile(request):
     else:
         form = ProfileForm(instance=profile_instance, user=request.user)
     return render(request, 'asher_ndizeye/profile.html', {'form': form})
-
 
 @login_required
 def change_password(request):

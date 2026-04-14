@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -31,7 +32,7 @@ ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').sp
 # Security Hardening
 if not DEBUG:
     # SSL/HTTPS Redirects
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = not DEBUG and 'test' not in sys.argv
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     
     # HSTS (Strict Transport Security)
