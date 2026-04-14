@@ -32,7 +32,7 @@ ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').sp
 # Security Hardening
 if not DEBUG:
     # SSL/HTTPS Redirects
-    SECURE_SSL_REDIRECT = not DEBUG and 'test' not in sys.argv
+    SECURE_SSL_REDIRECT = False
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     
     # HSTS (Strict Transport Security)
@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'axes',
     'asher_ndizeye',
 ]
 LOGIN_URL = '/login/'
@@ -73,6 +74,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware', # Must be at the bottom
 ]
 
 ROOT_URLCONF = 'devsec_demo.urls'
@@ -141,3 +143,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesBackend', # Keep this at the top
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Brute-Force Protection Rules
+AXES_FAILURE_LIMIT = 5               # Block after 5 fails
+AXES_COOLOFF_TIME = 0.5              # Lockout for 30 minutes
+AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True
+AXES_RESET_ON_SUCCESS = True
+
+if 'test' in sys.argv:
+    AXES_ENABLED = False
