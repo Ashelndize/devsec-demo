@@ -6,6 +6,19 @@ from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
 from .forms import RegistrationForm, LoginForm, ProfileForm
 from .models import Profile
+import logging
+audit_logger = logging.getLogger('asher_ndizeye.audit')
+
+def log_security_event(event_type, username, status="SUCCESS", details=""):
+    """
+    Standardized logging for security events. 
+    Never pass raw passwords or sensitive tokens here! [cite: 52, 62]
+    """
+    message = f"EVENT: {event_type} | USER: {username} | STATUS: {status} | DETAILS: {details}"
+    if status == "FAILURE":
+        audit_logger.warning(message)
+    else:
+        audit_logger.info(message)
 
 def register(request):
     if request.user.is_authenticated:

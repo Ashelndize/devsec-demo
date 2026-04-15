@@ -156,3 +156,33 @@ AXES_RESET_ON_SUCCESS = True
 
 if 'test' in sys.argv:
     AXES_ENABLED = False
+# --- AUDIT LOGGING CONFIGURATION ---
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'audit_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'auth_audit.log', # Stored in project root
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'asher_ndizeye.audit': { # App-specific audit logger
+            'handlers': ['audit_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
