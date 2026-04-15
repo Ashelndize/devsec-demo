@@ -1,20 +1,16 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import Profile
-
-
 
 class RegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     first_name = forms.CharField(max_length=50, required=True)
     last_name = forms.CharField(max_length=50, required=True)
 
-    class Meta:
+    class Meta(UserCreationForm.Meta):
         model = User
-        # REMOVED password1 and password2 from here. 
-        # UserCreationForm handles those automatically.
-        fields = ['username', 'first_name', 'last_name', 'email']
+        fields = ("username", "first_name", "last_name", "email")
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -34,11 +30,9 @@ class RegistrationForm(UserCreationForm):
             raise forms.ValidationError("Last name can only contain letters.")
         return last_name
 
-
 class LoginForm(AuthenticationForm):
-    username = forms.CharField(max_length=150)
-    password = forms.CharField(widget=forms.PasswordInput)
-
+    username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
 class ProfileForm(forms.ModelForm):
     first_name = forms.CharField(max_length=50, required=False)
@@ -64,4 +58,3 @@ class ProfileForm(forms.ModelForm):
         if commit:
             profile.save()
         return profile
-        
