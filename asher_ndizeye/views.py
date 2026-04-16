@@ -27,7 +27,6 @@ class StaffDashboardView(UserPassesTestMixin, ListView):
     context_object_name = 'users'
 
     def test_func(self):
-        # Requirement: Enforce distinct access for privileged users
         return self.request.user.is_staff
 
     def handle_no_permission(self):
@@ -95,16 +94,26 @@ def dashboard(request):
 
 @login_required
 def profile(request):
+    """
+    Handles profile viewing (GET) and secure updates (POST).
+    CSRF protection is enforced by Middleware; this view ensures 
+    state-changes only occur on POST.
+    """
     profile_instance, _ = Profile.objects.get_or_create(user=request.user)
+    
     if request.method == 'POST':
+        # Enforce that data modification ONLY happens here
         form = ProfileForm(request.POST, instance=profile_instance, user=request.user)
         if form.is_valid():
             form.save()
             log_security_event("PROFILE_UPDATE", request.user.username, "SUCCESS")
             messages.success(request, "Profile updated successfully!")
             return redirect('asher_ndizeye:profile')
+        else:
+            log_security_event("PROFILE_UPDATE", request.user.username, "FAILURE", "Invalid profile data")
     else:
         form = ProfileForm(instance=profile_instance, user=request.user)
+        
     return render(request, 'asher_ndizeye/profile.html', {'form': form})
 
 @login_required
