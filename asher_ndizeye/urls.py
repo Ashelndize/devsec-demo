@@ -5,6 +5,7 @@ from . import views
 app_name = 'asher_ndizeye'
 
 urlpatterns = [
+    # Using 'profile/' without an ID ensures users are routed via their session
     path('', views.dashboard, name='dashboard'),
     path('register/', views.register, name='register'),
     path('login/', views.user_login, name='login'),
@@ -15,24 +16,21 @@ urlpatterns = [
     path('staff/', views.StaffDashboardView.as_view(), name='staff_dashboard'),
 
     # --- SECURE PASSWORD RESET FLOW ---
-    # 1. Request link
     path('password-reset/', 
          auth_views.PasswordResetView.as_view(
              template_name='asher_ndizeye/password_reset.html',
              email_template_name='asher_ndizeye/password_reset_email.html',
              subject_template_name='asher_ndizeye/password_reset_subject.txt',
-             success_url='/password-reset/done/' # Adjust based on your root config
+             success_url='/password-reset/done/'
          ), 
          name='password_reset'),
          
-    # 2. Request sent confirmation
     path('password-reset/done/', 
          auth_views.PasswordResetDoneView.as_view(
              template_name='asher_ndizeye/password_reset_done.html'
          ), 
          name='password_reset_done'),
          
-    # 3. Link clicked from email (The token step)
     path('password-reset-confirm/<uidb64>/<token>/', 
          auth_views.PasswordResetConfirmView.as_view(
              template_name='asher_ndizeye/password_reset_confirm.html',
@@ -40,7 +38,6 @@ urlpatterns = [
          ), 
          name='password_reset_confirm'),
          
-    # 4. Success message
     path('password-reset/complete/', 
          auth_views.PasswordResetCompleteView.as_view(
              template_name='asher_ndizeye/password_reset_complete.html'

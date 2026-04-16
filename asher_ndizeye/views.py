@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.views.generic import ListView
 from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.core.exceptions import PermissionDenied  # Required for IDOR protection
 from .forms import RegistrationForm, LoginForm, ProfileForm
 from .models import Profile
 import logging
@@ -95,26 +96,33 @@ def dashboard(request):
 @login_required
 def profile(request):
     """
-    Handles profile viewing and updates.
-    Stored XSS protection relies on safe template rendering.
+    PREVENT IDOR: 
+    We do not accept a 'user_id' in the URL. We fetch the profile 
+    directly using request.user to ensure users only access their own data.
     """
+    # Force lookup by the authenticated session user
     profile_instance, _ = Profile.objects.get_or_create(user=request.user)
     
     if request.method == 'POST':
         form = ProfileForm(request.POST, instance=profile_instance, user=request.user)
         if form.is_valid():
+            # Explicit Object-Level Access Check:
+            # Ensure the instance being saved actually belongs to the user in the request
+            if profile_instance.user != request.user:
+                log_security_event("IDOR_ATTEMPT", request.user.username, "FAILURE", "User tried to modify another profile")
+                raise PermissionDenied("You do not have permission to edit this profile.")
+
             form.save()
-            # Log successful data update for audit trail
-            log_security_event("PROFILE_UPDATE", request.user.username, "SUCCESS", "User updated profile content")
+            log_security_event("PROFILE_UPDATE", request.user.username, "SUCCESS")
             messages.success(request, "Profile updated successfully!")
             return redirect('asher_ndizeye:profile')
         else:
-            log_security_event("PROFILE_UPDATE", request.user.username, "FAILURE", "Failed profile update attempt")
+            log_security_event("PROFILE_UPDATE", request.user.username, "FAILURE", "Invalid profile data submission")
     else:
         form = ProfileForm(instance=profile_instance, user=request.user)
         
     return render(request, 'asher_ndizeye/profile.html', {
-        'form': form, 
+        'form': form,
         'profile_instance': profile_instance
     })
 
