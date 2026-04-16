@@ -95,26 +95,28 @@ def dashboard(request):
 @login_required
 def profile(request):
     """
-    Handles profile viewing (GET) and secure updates (POST).
-    CSRF protection is enforced by Middleware; this view ensures 
-    state-changes only occur on POST.
+    Handles profile viewing and updates.
+    Stored XSS protection relies on safe template rendering.
     """
     profile_instance, _ = Profile.objects.get_or_create(user=request.user)
     
     if request.method == 'POST':
-        # Enforce that data modification ONLY happens here
         form = ProfileForm(request.POST, instance=profile_instance, user=request.user)
         if form.is_valid():
             form.save()
-            log_security_event("PROFILE_UPDATE", request.user.username, "SUCCESS")
+            # Log successful data update for audit trail
+            log_security_event("PROFILE_UPDATE", request.user.username, "SUCCESS", "User updated profile content")
             messages.success(request, "Profile updated successfully!")
             return redirect('asher_ndizeye:profile')
         else:
-            log_security_event("PROFILE_UPDATE", request.user.username, "FAILURE", "Invalid profile data")
+            log_security_event("PROFILE_UPDATE", request.user.username, "FAILURE", "Failed profile update attempt")
     else:
         form = ProfileForm(instance=profile_instance, user=request.user)
         
-    return render(request, 'asher_ndizeye/profile.html', {'form': form})
+    return render(request, 'asher_ndizeye/profile.html', {
+        'form': form, 
+        'profile_instance': profile_instance
+    })
 
 @login_required
 def change_password(request):

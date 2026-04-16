@@ -168,7 +168,8 @@
         </div>
 
         <form method="post" action="{% url 'asher_ndizeye:profile' %}">
-            {% csrf_token %} {{ form.as_p }}
+            {% csrf_token %}
+            {{ form.as_p }}
 
             <button type="submit" class="btn-save">Save Changes</button>
         </form>
